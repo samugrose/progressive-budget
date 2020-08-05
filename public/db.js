@@ -29,3 +29,30 @@ function saveRecord(record) {
   
     hTStore.add(record);
 }
+
+function checkDatabase() {
+    const transaction = db.transaction(["heldTransaction"], "readwrite");
+    const hTStore = transaction.objectStore("heldTransaction");
+    const getAll = hTStore.getAll();
+
+    getAll.onsuccess = function() {
+      if (getAll.result.length > 0) {
+        fetch("/api/transaction/bulk", {
+          method: "POST",
+          body: JSON.stringify(getAll.result),
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json"
+          }
+        })
+        .then(response => response.json())
+        .then(() => {
+          const transaction = db.transaction(["heldTransaction"], "readwrite");
+          const hTStore = transaction.objectStore("heldTransaction");
+          hTStore.clear();
+        });
+      }
+    };
+  }
+
+window.addEventListener("online", checkDatabase);
